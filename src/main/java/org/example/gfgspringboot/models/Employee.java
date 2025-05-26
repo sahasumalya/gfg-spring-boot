@@ -1,29 +1,76 @@
 package org.example.gfgspringboot.models;
 
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+import org.example.gfgspringboot.services.EmployeeListener;
+import org.ietf.jgss.GSSName;
 
+import java.io.Serializable;
+import java.util.Date;
+import java.util.List;
+
+//@EntityListeners(EmployeeListener.class)
+@Slf4j
 @Entity
 @Table(name="employees")
-public class Employee {
+public class Employee implements Serializable {
 
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
+    @Enumerated(EnumType.ORDINAL)
+    private Gender gender;
     private String name;
 
-    private String company;
+    @Transient
+    private String displayName;
 
-    public Employee(String name, String company) {
-        this.name = name;
-        this.company = company;
+    /*@Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name="email", column = @Column(name = "employeeEmail")),
+            @AttributeOverride(name="phone", column = @Column(name = "employeePhone")),
+    })
+    private ContactInfo contactInfo;*/
+
+    @OneToOne(cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
+    @JoinColumn(name="address_id", referencedColumnName = "id")
+    private Address address;
+
+    public Address getAddress() {
+        return address;
     }
+
+    public void setAddress(Address address) {
+        this.address = address;
+    }
+
+    /*@Temporal(TemporalType.DATE)
+    private Date createdAt;*/
+
+    public Gender getGender() {
+        return gender;
+    }
+
+    public void setGender(Gender gender) {
+        this.gender = gender;
+    }
+
+    public String getDisplayName() {
+        return gender.equals(Gender.MALE) ? "Mr."+name : "Mrs."+name;
+    }
+
+    public void setDisplayName(String displayName) {
+        this.displayName = displayName;
+    }
+
+    @ManyToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name="company_id", referencedColumnName = "id")
+    private Company company;
+
 
     public String getName() {
         return name;
@@ -41,13 +88,16 @@ public class Employee {
         this.name = name;
     }
 
-    public String getCompany() {
+    public Company getCompany() {
         return company;
     }
 
-    public void setCompany(String company) {
+    public void setCompany(Company company) {
         this.company = company;
     }
+
+
+
 
     public Employee() {
 
