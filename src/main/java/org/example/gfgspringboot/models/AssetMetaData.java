@@ -3,12 +3,11 @@ package org.example.gfgspringboot.models;
 import jakarta.persistence.Embeddable;
 
 import java.io.Serializable;
-import java.util.Date;
+import java.sql.Date;
 
 @Embeddable
 public class AssetMetaData implements Serializable {
     private String author;
-    private Date publishDate;
     private String genre;
 
     public String getAuthor() {
@@ -19,13 +18,7 @@ public class AssetMetaData implements Serializable {
         this.author = author;
     }
 
-    public Date getPublishDate() {
-        return publishDate;
-    }
 
-    public void setPublishDate(Date publishDate) {
-        this.publishDate = publishDate;
-    }
 
     public String getGenre() {
         return genre;

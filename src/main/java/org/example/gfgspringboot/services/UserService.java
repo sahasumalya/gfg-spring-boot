@@ -5,18 +5,25 @@ import org.example.gfgspringboot.models.User;
 import org.example.gfgspringboot.repositories.AssetRepository;
 import org.example.gfgspringboot.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 public class UserService {
 
+    private final AssetRepository assetRepository;
     private UserRepository userRepository;
 
     @Autowired
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, AssetRepository assetRepository) {
         this.userRepository = userRepository;
+        this.assetRepository = assetRepository;
     }
 
     public String registerUser(User user) {
@@ -45,13 +52,29 @@ public class UserService {
         return "User Not Found";
     }
 
-    public String addAsset(User user, Asset asset) {
-        User daoUser = userRepository.findByUsernameAndPassword(user.getUsername(), user.getPassword());
-        if(daoUser.getContributions() == null) {
-            daoUser.setContributions(new ArrayList<>());
+    public String addAsset(Long userId, Asset asset) {
+        Optional<User> daoUser = userRepository.findById(userId);
+        if (daoUser.isPresent()) {
+            asset.setContributor(daoUser.get());
+        } else{
+            return "User Not Found";
         }
-        daoUser.getContributions().add(asset);
-        userRepository.save(daoUser);
+
+        assetRepository.save(asset);
         return "Asset Added Successfully";
+    }
+
+    public List<Asset> getAllAssetsForUser(String username) {
+        User user = userRepository.findByUsername(username);
+        if(user != null) {
+            return user.getContributions();
+        }
+        return new ArrayList<>();
+    }
+
+    public void getPagebaleUsers(){
+        Pageable pageRequest = PageRequest.of(0, 10);
+        Page<User> page = userRepository.findAll(pageRequest);
+
     }
 }

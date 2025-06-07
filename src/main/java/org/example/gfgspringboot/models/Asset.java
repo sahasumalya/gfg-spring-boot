@@ -18,6 +18,7 @@ public class Asset {
         return id;
     }
 
+    @Enumerated(EnumType.ORDINAL)
     private AssetType type;
 
    private String name;
@@ -36,7 +37,13 @@ public class Asset {
     }
 
     public void setType(AssetType type) {
+
         this.type = type;
+    }
+
+    public void setType(int type) {
+
+        this.type = AssetType.values()[type];
     }
 
     public String getName() {
@@ -63,7 +70,7 @@ public class Asset {
         this.contributor = contributor;
     }
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
    @JoinColumn(name="contributor_id", referencedColumnName = "id")
    private User contributor;
 }

@@ -29,6 +29,16 @@ public class Employee implements Serializable {
     @Transient
     private String displayName;
 
+    @ManyToMany(fetch = FetchType.EAGER)
+   /* @JoinTable(@Table(name = "employee_projects"),
+            @JoinColumn(columnName="employee_id", inverse_column="project_id")*/
+   /* @JoinTable(
+            name = "employee_projects",
+            joinColumns = @Column(name = "employee_id")
+            inverseJoinColumns = @Column(name = "project_id")
+    )
+    private List<Project> projects;
+
     /*@Embedded
     @AttributeOverrides({
             @AttributeOverride(name="email", column = @Column(name = "employeeEmail")),

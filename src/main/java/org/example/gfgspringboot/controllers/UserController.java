@@ -1,20 +1,29 @@
 package org.example.gfgspringboot.controllers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.gfgspringboot.models.*;
+import org.example.gfgspringboot.pubsub.RedisMessagePublisher;
 import org.example.gfgspringboot.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.Date;
+import java.sql.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 @RestController
 public class UserController {
 
     private final UserService userService;
 
+    @Autowired
+    private RedisCacheManager redisCacheManager;
+
+    @Autowired
+    private RedisMessagePublisher redisMessagePublisher;
 
     @Autowired
     public UserController(UserService userService) {
@@ -30,6 +39,10 @@ public class UserController {
 
         user.setRole(UserRole.MEMBER);
         user.setStatus(UserStatus.ACTIVE);
+        redisMessagePublisher.publish("one new user found");
+        ObjectMapper objectMapper = new ObjectMapper();
+        Map map = objectMapper.convertValue(user, Map.class);
+        Objects.requireNonNull(redisCacheManager.getCache("user")).put(user.getUsername(), map);
         return ResponseEntity.ok(userService.registerUser(user));
 
     }
@@ -54,19 +67,23 @@ public class UserController {
 
 
     @PostMapping("/v1/users/addAsset")
-    public ResponseEntity<String> addAsset(@RequestBody UpdatePasswordRequest updatePasswordRequest) {
-        User user = new User();
-        user.setUsername(updatePasswordRequest.getUsername());
-        user.setPassword(updatePasswordRequest.getOldPassword());
+    public ResponseEntity<String> addAsset(@RequestBody AddAssetRequest addAssetRequest) {
         Asset asset = new Asset();
-        asset.setName("cesvesfd");
-        asset.setType(AssetType.BOOK);
+        asset.setName(addAssetRequest.getAssetName());
+        asset.setType(addAssetRequest.getAssetType());
         AssetMetaData assetMetaData = new AssetMetaData();
-        assetMetaData.setAuthor("aecdwacew");
-        assetMetaData.setGenre("funy");
-        assetMetaData.setPublishDate(new Date());
+        assetMetaData.setAuthor(addAssetRequest.getAuthor());
+        assetMetaData.setGenre(addAssetRequest.getGenre());
         asset.setMetaData(assetMetaData);
-        return ResponseEntity.ok(userService.addAsset(user, asset));
+        return ResponseEntity.ok(userService.addAsset(addAssetRequest.getUserId(), asset));
 
+    }
+    /*
+       Asset--> [ contributor---> List of contribution]
+     */
+
+    @GetMapping("/v1/users/getContributions")
+    public ResponseEntity<List<Asset>> getContributions(@RequestParam String username) {
+        return ResponseEntity.ok(userService.getAllAssetsForUser(username));
     }
 }
