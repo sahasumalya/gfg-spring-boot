@@ -8,6 +8,9 @@ spring.datasource.password=password
 spring.jpa.database-platform=org.hibernate.dialect.H2Dialect
 
 
+spring.security.user.name=user
+spring.security.user.password=qwerty
+
 import java.sql.*;
 
 public class MySQLConnect {

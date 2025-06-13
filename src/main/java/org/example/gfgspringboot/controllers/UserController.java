@@ -5,8 +5,14 @@ import org.example.gfgspringboot.models.*;
 import org.example.gfgspringboot.pubsub.RedisMessagePublisher;
 import org.example.gfgspringboot.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.cache.RedisCacheManager;
+import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
+import org.springframework.security.web.session.SessionManagementFilter;
 import org.springframework.web.bind.annotation.*;
 
 import java.sql.Date;
@@ -23,15 +29,34 @@ public class UserController {
     private RedisCacheManager redisCacheManager;
 
     @Autowired
+    @Qualifier(value="redisConnectionFactory2")
+    private LettuceConnectionFactory redisConnectionFactory2;
+
+    @Autowired
     private RedisMessagePublisher redisMessagePublisher;
+
+
 
     @Autowired
     public UserController(UserService userService) {
         this.userService = userService;
     }
 
+    @GetMapping("/login")
+    public String login() {
+        return "login";
+    }
+
+    @GetMapping("/home")
+    public String home() {
+        //model.addAttribute("message", "You are successfully logged in.");
+        return "home";
+    }
     @PostMapping("/v1/users/register")
     public ResponseEntity<String> register(@RequestBody RegisterRequest registerRequest) {
+        if(redisCacheManager.getCache("user").get(registerRequest.getEmail()) != null) {
+            return ResponseEntity.ok("User already exists");
+        }
         User user = new User();
         user.setUsername(registerRequest.getUsername());
         user.setPassword(registerRequest.getPassword());
@@ -40,9 +65,15 @@ public class UserController {
         user.setRole(UserRole.MEMBER);
         user.setStatus(UserStatus.ACTIVE);
         redisMessagePublisher.publish("one new user found");
+        System.out.println("controller thread:"+Thread.currentThread().getName());
         ObjectMapper objectMapper = new ObjectMapper();
+
         Map map = objectMapper.convertValue(user, Map.class);
-        Objects.requireNonNull(redisCacheManager.getCache("user")).put(user.getUsername(), map);
+        redisCacheManager.getCache("user").put(user.getEmail(), map);
+        RedisTemplate<String, String> template = new RedisTemplate<>();
+        template.setConnectionFactory(redisConnectionFactory2);
+        //Object obj = template.opsForValue().get(user.getEmail());
+       // Objects.requireNonNull(redisCacheManager.getCache("user")).put(user.getUsername(), map);
         return ResponseEntity.ok(userService.registerUser(user));
 
     }
