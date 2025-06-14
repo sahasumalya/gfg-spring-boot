@@ -1,15 +1,21 @@
 package org.example.gfgspringboot.configurations;
 
 import org.example.gfgspringboot.repositories.UserRepository;
+import org.example.gfgspringboot.requestFilters.CustomSessionValidationFilter;
 import org.example.gfgspringboot.requestFilters.JwtRequestFilter;
 import org.example.gfgspringboot.utils.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationTrustResolver;
+import org.springframework.security.authentication.AuthenticationTrustResolverImpl;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolderStrategy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -17,6 +23,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.security.web.context.SecurityContextPersistenceFilter;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
 import org.springframework.security.web.session.InvalidSessionStrategy;
+import org.springframework.security.web.session.SessionManagementFilter;
 import org.springframework.security.web.session.SimpleRedirectInvalidSessionStrategy;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
@@ -97,7 +104,10 @@ public class SecurityConfiguration {
         return http.build();
     }*/
 
-    @Bean
+    //
+    // eyJhbGciOiJIUzI1NiJ9.eyJSb2xlIjoiQWRtaW4iLCJzdWIiOiJzYWhhc3VtYWx5YSIsIklzc3VlciI6Iklzc3VlciIsImV4cCI6MTc0OTk3OTM3MCwiaWF0IjoxNzQ5ODkyOTcwfQ.YE9Ra8Vz3CteBitnb9ovICYnShvdDZzX8-voMg6Aaic
+
+    /*@Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.csrf()
                 .disable()
@@ -106,14 +116,45 @@ public class SecurityConfiguration {
                 httpSecuritySessionManagementConfigurer.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                         .invalidSessionUrl("/invalidSession")
                         .invalidSessionStrategy(invalidSessionStrategy())
-                        .maximumSessions(1))
+                        .maximumSessions(1)
+                        .maxSessionsPreventsLogin(true)
+                        )
+
                 //.userDetailsService(userDetailsService())
                 .addFilterAfter(new JwtRequestFilter(new JwtUserDetailsService(), new JwtUtil()), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(new CustomSessionValidationFilter(), SessionManagementFilter.class)
                 .authorizeRequests()
                 .anyRequest()
                 .authenticated();
         return http.build();
+    }*/
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http.csrf()
+                .disable()
+                .httpBasic(withDefaults())
+                .sessionManagement(httpSecuritySessionManagementConfigurer ->
+                        httpSecuritySessionManagementConfigurer.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                                .invalidSessionUrl("/invalidSession")
+                                .invalidSessionStrategy(invalidSessionStrategy())
+                                .maximumSessions(1)
+                                .maxSessionsPreventsLogin(true)
+                )
+
+                //.userDetailsService(userDetailsService())
+                .addFilterAfter(new JwtRequestFilter(new JwtUserDetailsService(), new JwtUtil()), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(new CustomSessionValidationFilter(), SessionManagementFilter.class)
+                .authorizeRequests()
+                .requestMatchers("/v1/users/login")
+                .permitAll()
+                .requestMatchers("/session-expired")
+                .permitAll()
+                .anyRequest()
+                .authenticated();
+        return http.build();
     }
+
 
     @Bean
     public InvalidSessionStrategy invalidSessionStrategy() {
@@ -123,6 +164,31 @@ public class SecurityConfiguration {
     public HttpSessionEventPublisher httpSessionEventPublisher() {
         return new HttpSessionEventPublisher();
     }
+
+    /*@Bean
+    public SecurityContextHolderStrategy securityContextHolderStrategy() {
+        return new SecurityContextHolderStrategy() {
+            @Override
+            public void clearContext() {
+
+            }
+
+            @Override
+            public SecurityContext getContext() {
+                return null;
+            }
+
+            @Override
+            public void setContext(SecurityContext context) {
+
+            }
+
+            @Override
+            public SecurityContext createEmptyContext() {
+                return null;
+            }
+        }
+    }*/
 
     /*@Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {

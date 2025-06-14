@@ -2,6 +2,7 @@ package org.example.gfgspringboot.requestFilters;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.example.gfgspringboot.utils.JwtUtil;
@@ -14,6 +15,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Optional;
 
 public class JwtRequestFilter extends OncePerRequestFilter {
     private UserDetailsService userDetailsService;
@@ -28,18 +31,23 @@ public class JwtRequestFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
                                     FilterChain chain) throws ServletException, IOException {
         final String authorizationHeader = request.getHeader("Authorization");
+        String authorizationToken = null;
+        if(request.getCookies() != null && request.getCookies().length > 0) {
+            Optional<Cookie> token = Arrays.stream(request.getCookies()).filter(cookie ->cookie.getName().equals("token")).findFirst();
+            if(token.isPresent()) {
+                authorizationToken = token.get().getValue();
+            }
+        }
         String username = null;
-        String jwt = null;
 
-        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-            jwt = authorizationHeader.substring(7);
-            username = jwtUtil.extractUsername(jwt);
+        if (authorizationToken != null) {
+            username = jwtUtil.extractUsername(authorizationToken);
         }
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
 
-            if (jwtUtil.validateToken(jwt, userDetails.getUsername())) {
+            if (jwtUtil.validateToken(authorizationToken, userDetails.getUsername())) {
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                         userDetails, null, userDetails.getAuthorities());
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));

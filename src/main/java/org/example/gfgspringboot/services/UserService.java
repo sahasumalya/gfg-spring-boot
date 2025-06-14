@@ -4,6 +4,7 @@ import org.example.gfgspringboot.models.Asset;
 import org.example.gfgspringboot.models.User;
 import org.example.gfgspringboot.repositories.AssetRepository;
 import org.example.gfgspringboot.repositories.UserRepository;
+import org.example.gfgspringboot.utils.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -36,7 +37,8 @@ public class UserService {
 
     public String loginUser(User user) {
         if (userRepository.findByUsernameAndPassword(user.getUsername(), user.getPassword()) != null) {
-            return "Logged in Successfully";
+            JwtUtil jwtUtil = new JwtUtil();
+            return jwtUtil.generateToken(user.getUsername());
         }
         return "User Not Found";
     }

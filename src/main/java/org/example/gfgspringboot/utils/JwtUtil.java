@@ -3,7 +3,11 @@ package org.example.gfgspringboot.utils;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import org.springframework.security.core.userdetails.UserDetails;
+
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Function;
 
 public class JwtUtil {
@@ -34,4 +38,14 @@ public class JwtUtil {
         final String extractedUsername = extractUsername(token);
         return (extractedUsername.equals(username) && !isTokenExpired(token));
     }
+
+    public String generateToken(String username) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("sub", username);
+        claims.put("roles", "ROLE_USER");
+
+        return Jwts.builder().addClaims(claims).setExpiration(new Date(new Date().getTime() + 1000 * 600 * 5 )).signWith(SignatureAlgorithm.HS512, secretKey).compact();
+    }
+
+
 }

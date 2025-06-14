@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
@@ -19,6 +21,9 @@ import java.sql.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
+
+import static org.springframework.data.redis.connection.ReactiveStreamCommands.AddStreamRecord.body;
 
 @RestController
 public class UserController {
@@ -78,12 +83,23 @@ public class UserController {
 
     }
 
+    @GetMapping("/session-expired")
+    public String sessionExpired() {
+        return "session-expired";
+    }
+
     @PostMapping("/v1/users/login")
     public ResponseEntity<String> login(@RequestBody LoginRequest loginRequest) {
         User user = new User();
         user.setUsername(loginRequest.getUsername());
         user.setPassword(loginRequest.getPassword());
-        return ResponseEntity.ok(userService.loginUser(user));
+        String token = userService.loginUser(user);
+        HttpHeaders headers = new HttpHeaders();
+        // token="+token
+        headers.add("Set-Cookie","token=" + token+ "; Max-Age=604800; Path=/; Secure; HttpOnly;");
+        ResponseEntity responseEntity = ResponseEntity.status(HttpStatus.OK).headers(headers).body("Login Success");
+
+        return responseEntity;
 
     }
 
