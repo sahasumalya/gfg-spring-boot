@@ -1,5 +1,7 @@
 package org.example.gfgspringboot.services;
 
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import org.example.gfgspringboot.models.Asset;
 import org.example.gfgspringboot.models.User;
 import org.example.gfgspringboot.repositories.AssetRepository;
@@ -9,17 +11,23 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.EnableRetry;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 @Service
+//@EnableRetry
 public class UserService {
 
     private final AssetRepository assetRepository;
     private UserRepository userRepository;
+    private static int numberOfCalls = 0;
 
     @Autowired
     public UserService(UserRepository userRepository, AssetRepository assetRepository) {
@@ -27,12 +35,37 @@ public class UserService {
         this.assetRepository = assetRepository;
     }
 
+    @Retry(name = "default")
+    @CircuitBreaker(name = "webClientCircuitBreaker", fallbackMethod = "fallbackWebAPICircuitBreaker")
     public String registerUser(User user) {
+            String token = callUnstableAPI();
             if (userRepository.findByEmail(user.getEmail()) != null) {
                 return "Email Already Exists";
             }
             userRepository.save(user);
             return "User Registered Successfully";
+    }
+    public String callUnstableAPI() {
+        try{
+            return callWebAPI();
+        } catch (RuntimeException e){
+            throw e;
+        }
+
+    }
+
+    public String fallbackWebAPI(User user, Exception e) {
+        return "fallbackWebAPI";
+    }
+    public String fallbackWebAPICircuitBreaker(User user, Exception e) {
+        return "circuit is open";
+    }
+    private String callWebAPI()  {
+        numberOfCalls++;
+       /* if(numberOfCalls % 3 == 0) {
+            return "success";
+        }*/
+        throw new RuntimeException("test exception");
     }
 
     public String loginUser(User user) {

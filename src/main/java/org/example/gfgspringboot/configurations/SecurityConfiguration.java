@@ -1,5 +1,8 @@
 package org.example.gfgspringboot.configurations;
 
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.example.gfgspringboot.repositories.UserRepository;
 import org.example.gfgspringboot.requestFilters.CustomSessionValidationFilter;
 import org.example.gfgspringboot.requestFilters.JwtRequestFilter;
@@ -7,25 +10,26 @@ import org.example.gfgspringboot.utils.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authentication.AuthenticationTrustResolver;
-import org.springframework.security.authentication.AuthenticationTrustResolverImpl;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolderStrategy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.core.session.SessionRegistryImpl;
+//import org.springframework.security.oauth2.client.oidc.web.server.logout.OidcClientInitiatedServerLogoutSuccessHandler;
+//import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+//import org.springframework.security.oauth2.client.registration.ReactiveClientRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.context.SecurityContextPersistenceFilter;
+import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
+import org.springframework.security.web.authentication.logout.SimpleUrlLogoutSuccessHandler;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
 import org.springframework.security.web.session.InvalidSessionStrategy;
 import org.springframework.security.web.session.SessionManagementFilter;
 import org.springframework.security.web.session.SimpleRedirectInvalidSessionStrategy;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+
+import java.io.IOException;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
@@ -33,6 +37,10 @@ import static org.springframework.security.config.Customizer.withDefaults;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfiguration {
+
+
+
+
 
     @Autowired
     private UserRepository userRepository;
@@ -104,6 +112,38 @@ public class SecurityConfiguration {
         return http.build();
     }*/
 
+
+    /*@Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+         http
+                 .csrf()
+                 .disable()
+                 .authorizeRequests(authorize -> authorize
+                         .requestMatchers( "/", "/error", "/webjars/**", "/session-expired","/login/oauth2/code/github").permitAll() // Public pages
+                         .anyRequest().authenticated() // All other pages require authentication
+                 )
+                 .logout(logout -> logout
+                         .logoutUrl("/logout")
+                         .logoutSuccessHandler(oidcLogoutSuccessHandler())
+                         .invalidateHttpSession(true)
+                         .deleteCookies("JSESSIONID")
+                         .clearAuthentication(true)
+                 )
+                 .oauth2Login();
+
+
+         return http.build();
+    }*/
+
+    private LogoutSuccessHandler oidcLogoutSuccessHandler() {
+        SimpleUrlLogoutSuccessHandler successHandler = new SimpleUrlLogoutSuccessHandler();
+        successHandler.setTargetUrlParameter("http://localhost:3000/session-expired");
+        //successHandler.setDefaultTargetUrl("http://localhost:3000/session-expired");
+        SecurityContextHolder.clearContext();// Replace with your redirect URL
+
+        return successHandler;
+    }
+
     //
     // eyJhbGciOiJIUzI1NiJ9.eyJSb2xlIjoiQWRtaW4iLCJzdWIiOiJzYWhhc3VtYWx5YSIsIklzc3VlciI6Iklzc3VlciIsImV4cCI6MTc0OTk3OTM3MCwiaWF0IjoxNzQ5ODkyOTcwfQ.YE9Ra8Vz3CteBitnb9ovICYnShvdDZzX8-voMg6Aaic
 
@@ -134,21 +174,27 @@ public class SecurityConfiguration {
         http.csrf()
                 .disable()
                 .httpBasic(withDefaults())
-                .sessionManagement(httpSecuritySessionManagementConfigurer ->
+                /*.sessionManagement(httpSecuritySessionManagementConfigurer ->
                         httpSecuritySessionManagementConfigurer.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                                 .invalidSessionUrl("/invalidSession")
                                 .invalidSessionStrategy(invalidSessionStrategy())
                                 .maximumSessions(1)
                                 .maxSessionsPreventsLogin(true)
-                )
+                )*/
+                /*.logout(logout -> logout
+                        .logoutUrl("/logout")
+                        .logoutSuccessUrl("/session-expired")
+                        .logoutSuccessHandler(oidcLogoutSuccessHandler())
+                        .invalidateHttpSession(true)
+                        .deleteCookies("JSESSIONID", "token")
+                        .clearAuthentication(true)
+                )*/
 
                 //.userDetailsService(userDetailsService())
-                .addFilterAfter(new JwtRequestFilter(new JwtUserDetailsService(), new JwtUtil()), UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(new CustomSessionValidationFilter(), SessionManagementFilter.class)
+                //.addFilterAfter(new JwtRequestFilter(new JwtUserDetailsService(), new JwtUtil()), UsernamePasswordAuthenticationFilter.class)
+               // .addFilterBefore(new CustomSessionValidationFilter(), SessionManagementFilter.class)
                 .authorizeRequests()
-                .requestMatchers("/v1/users/login")
-                .permitAll()
-                .requestMatchers("/session-expired")
+                .requestMatchers("/v1/users/login", "/v1/users/register", "/session-expired", "/invalidSession")
                 .permitAll()
                 .anyRequest()
                 .authenticated();
@@ -164,6 +210,7 @@ public class SecurityConfiguration {
     public HttpSessionEventPublisher httpSessionEventPublisher() {
         return new HttpSessionEventPublisher();
     }
+
 
     /*@Bean
     public SecurityContextHolderStrategy securityContextHolderStrategy() {

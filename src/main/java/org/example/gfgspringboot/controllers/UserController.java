@@ -1,7 +1,14 @@
 package org.example.gfgspringboot.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.resilience4j.retry.annotation.Retry;
+import org.apache.hc.client5.http.classic.HttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.core5.http.ParseException;
+import org.example.gfgspringboot.clients.WeatherClient;
 import org.example.gfgspringboot.models.*;
+import org.example.gfgspringboot.pubsub.ProducerService;
 import org.example.gfgspringboot.pubsub.RedisMessagePublisher;
 import org.example.gfgspringboot.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,10 +20,14 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+//import org.springframework.security.core.annotation.AuthenticationPrincipal;
+//import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.session.SessionManagementFilter;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.sql.Date;
 import java.util.List;
 import java.util.Map;
@@ -40,8 +51,15 @@ public class UserController {
     @Autowired
     private RedisMessagePublisher redisMessagePublisher;
 
+   // @Autowired
+    //private WeatherClient weatherClient;
+   @Autowired
+   private ProducerService producerService;
 
+   @Autowired
+   private WeatherClient weatherClient;
 
+   private static int numberOfCalls  = 0;
     @Autowired
     public UserController(UserService userService) {
         this.userService = userService;
@@ -58,10 +76,16 @@ public class UserController {
         return "home";
     }
     @PostMapping("/v1/users/register")
-    public ResponseEntity<String> register(@RequestBody RegisterRequest registerRequest) {
+    public ResponseEntity<String> register(@RequestBody RegisterRequest registerRequest) throws IOException, ParseException {
+        weatherClient.getWeather("paris");
+
+        producerService.sendMessage("hello kafka");
+
         if(redisCacheManager.getCache("user").get(registerRequest.getEmail()) != null) {
             return ResponseEntity.ok("User already exists");
         }
+        //CloseableHttpClient client = HttpClients.createDefault();
+       // String response = weatherClient.getCurrentWeather("london", "4d13d7ea7e6f4f789ae163958251706");
         User user = new User();
         user.setUsername(registerRequest.getUsername());
         user.setPassword(registerRequest.getPassword());
@@ -69,24 +93,40 @@ public class UserController {
 
         user.setRole(UserRole.MEMBER);
         user.setStatus(UserStatus.ACTIVE);
-        redisMessagePublisher.publish("one new user found");
+        return ResponseEntity.ok(userService.registerUser(user));
+        /*redisMessagePublisher.publish("one new user found");
         System.out.println("controller thread:"+Thread.currentThread().getName());
         ObjectMapper objectMapper = new ObjectMapper();
 
         Map map = objectMapper.convertValue(user, Map.class);
         redisCacheManager.getCache("user").put(user.getEmail(), map);
         RedisTemplate<String, String> template = new RedisTemplate<>();
-        template.setConnectionFactory(redisConnectionFactory2);
+        template.setConnectionFactory(redisConnectionFactory2);*/
         //Object obj = template.opsForValue().get(user.getEmail());
        // Objects.requireNonNull(redisCacheManager.getCache("user")).put(user.getUsername(), map);
-        return ResponseEntity.ok(userService.registerUser(user));
+
 
     }
+
+
+
+    /*@GetMapping("/user")
+    public Map<String, Object> user(@AuthenticationPrincipal OAuth2User principal) {
+        // 'principal' contains the user attributes from the provider (Google)
+        return principal.getAttributes();
+    }*/
 
     @GetMapping("/session-expired")
     public String sessionExpired() {
         return "session-expired";
     }
+
+    @GetMapping("/login/oauth2/code/github")
+    public String oathredirect() {
+        return "successful login";
+    }
+
+
 
     @PostMapping("/v1/users/login")
     public ResponseEntity<String> login(@RequestBody LoginRequest loginRequest) {
