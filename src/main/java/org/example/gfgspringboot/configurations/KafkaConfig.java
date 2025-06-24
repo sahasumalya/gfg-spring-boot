@@ -44,7 +44,9 @@ public class KafkaConfig {
         config.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092"); // Kafka broker
         config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class); // Key deserialization
         config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class); // Value deserialization
-        config.put(ConsumerConfig.GROUP_ID_CONFIG, "my-group"); // Consumer group
+        config.put(ConsumerConfig.GROUP_ID_CONFIG, "my-group");
+
+        // Consumer group
 
         return config;
     }
@@ -59,6 +61,7 @@ public class KafkaConfig {
         ConcurrentKafkaListenerContainerFactory<String, String> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory());
+        factory.setConcurrency(3);
         return factory;
     }
 }

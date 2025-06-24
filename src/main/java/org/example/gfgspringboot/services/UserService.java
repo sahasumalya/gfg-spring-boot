@@ -58,11 +58,11 @@ public class UserService {
         return "fallbackWebAPI";
     }
     public String fallbackWebAPICircuitBreaker(User user, Exception e) {
-        return "circuit is open";
+        return "fallbackWebAPICircuitBreaker";
     }
     private String callWebAPI()  {
         numberOfCalls++;
-       /* if(numberOfCalls % 3 == 0) {
+       /*if(numberOfCalls % 3 == 0) {
             return "success";
         }*/
         throw new RuntimeException("test exception");

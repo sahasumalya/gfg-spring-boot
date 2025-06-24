@@ -2,6 +2,7 @@ package org.example.gfgspringboot.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.resilience4j.retry.annotation.Retry;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.hc.client5.http.classic.HttpClient;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
@@ -36,6 +37,7 @@ import java.util.UUID;
 
 import static org.springframework.data.redis.connection.ReactiveStreamCommands.AddStreamRecord.body;
 
+@Slf4j
 @RestController
 public class UserController {
 
@@ -75,11 +77,21 @@ public class UserController {
         //model.addAttribute("message", "You are successfully logged in.");
         return "home";
     }
+    @GetMapping("/v1/weather")
+    public String getWeather(@RequestParam String city) throws IOException, ParseException {
+        String weather = weatherClient.getWeather(city);
+        log.info("request recieved weather " + city);
+        return weather;
+
+    }
     @PostMapping("/v1/users/register")
     public ResponseEntity<String> register(@RequestBody RegisterRequest registerRequest) throws IOException, ParseException {
-        weatherClient.getWeather("paris");
+       // weatherClient.getWeather("paris");
 
-        producerService.sendMessage("hello kafka");
+        //producerService.sendMessage("1");
+        //producerService.sendMessage("2");
+        //producerService.sendMessage("3");
+
 
         if(redisCacheManager.getCache("user").get(registerRequest.getEmail()) != null) {
             return ResponseEntity.ok("User already exists");

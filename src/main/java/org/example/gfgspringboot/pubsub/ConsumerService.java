@@ -6,8 +6,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class ConsumerService {
 
-    @KafkaListener(topics = "gfg-demo", groupId = "my-group") // Kafka topic and group
+    @KafkaListener(topics = "order", groupId = "my-group") // Kafka topic and group
     public void consumeMessage(String message) {
-        System.out.println("Consumed message: " + message);
+        System.out.println("Consumed message: " + message+" thread: " + Thread.currentThread().getName());
     }
 }
