@@ -35,10 +35,10 @@ public class UserService {
         this.assetRepository = assetRepository;
     }
 
-    @Retry(name = "default")
-    @CircuitBreaker(name = "webClientCircuitBreaker", fallbackMethod = "fallbackWebAPICircuitBreaker")
+    //@Retry(name = "default")
+    //@CircuitBreaker(name = "webClientCircuitBreaker", fallbackMethod = "fallbackWebAPICircuitBreaker")
     public String registerUser(User user) {
-            String token = callUnstableAPI();
+            //String token = callUnstableAPI();
             if (userRepository.findByEmail(user.getEmail()) != null) {
                 return "Email Already Exists";
             }

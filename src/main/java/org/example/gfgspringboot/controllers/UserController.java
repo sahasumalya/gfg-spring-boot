@@ -58,13 +58,14 @@ public class UserController {
    @Autowired
    private ProducerService producerService;
 
-   @Autowired
+
    private WeatherClient weatherClient;
 
    private static int numberOfCalls  = 0;
     @Autowired
-    public UserController(UserService userService) {
+    public UserController(UserService userService, WeatherClient weatherClient) {
         this.userService = userService;
+        this.weatherClient = weatherClient;
     }
 
     @GetMapping("/login")
@@ -79,10 +80,15 @@ public class UserController {
     }
     @GetMapping("/v1/weather")
     public String getWeather(@RequestParam String city) throws IOException, ParseException {
-        String weather = weatherClient.getWeather(city);
-        log.info("request recieved weather " + city);
-        return weather;
+        try{
+            String weather = weatherClient.getWeather(city);
+            log.info("request recieved weather " + city);
+            return weather;
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
 
+       return null;
     }
     @PostMapping("/v1/users/register")
     public ResponseEntity<String> register(@RequestBody RegisterRequest registerRequest) throws IOException, ParseException {
@@ -117,7 +123,7 @@ public class UserController {
         //Object obj = template.opsForValue().get(user.getEmail());
        // Objects.requireNonNull(redisCacheManager.getCache("user")).put(user.getUsername(), map);
 
-
+      //return ResponseEntity.ok("User Registered Successfully");
     }
 
 

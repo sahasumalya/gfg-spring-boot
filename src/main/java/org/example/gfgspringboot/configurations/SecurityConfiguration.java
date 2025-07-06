@@ -194,7 +194,7 @@ public class SecurityConfiguration {
                 //.addFilterAfter(new JwtRequestFilter(new JwtUserDetailsService(), new JwtUtil()), UsernamePasswordAuthenticationFilter.class)
                // .addFilterBefore(new CustomSessionValidationFilter(), SessionManagementFilter.class)
                 .authorizeRequests()
-                .requestMatchers("/v1/users/login", "/v1/users/register", "/session-expired", "/invalidSession", "/v1/weather")
+                .requestMatchers("/v1/users/login", "/v1/users/register", "/session-expired", "/invalidSession", "/v1/weather", "/parse-csv")
                 .permitAll()
                 .anyRequest()
                 .authenticated();
